@@ -1,0 +1,85 @@
+name: Sample ML CI (train & publish)
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  train-and-evaluate:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      # The sample project is part of this repo; checkout the repo and run the sample script
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r sample_external_project/requirements.txt
+
+    - name: Run sample integration tests
+      run: |
+        pytest sample_external_project/tests || true
+
+    - name: Train and evaluate (sample)
+      id: train_evaluate
+      env:
+        # Users should add these secrets in their repo settings
+        MONGODB_CONNECTION_STRING: ${{ secrets.MONGODB_CONNECTION_STRING }}
+        DASHBOARD_API_URL: ${{ secrets.DASHBOARD_API_URL }}
+        GITHUB_SHA: ${{ github.sha }}
+        GITHUB_REF_NAME: ${{ github.ref_name }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_WORKFLOW: ${{ github.workflow }}
+      run: |
+        set -e
+        # Run the sample training script that demonstrates API and direct-Mongo integration
+        python sample_external_project/train_and_evaluate.py 2>&1 | tee sample_ci_output.log
+
+        # Try to extract the project code and metrics from the script output
+        PROJECT_CODE=$(grep "Your project code is:" sample_ci_output.log | sed 's/.*Your project code is: //') || true
+        MODEL_ID=$(grep "Model ID:" sample_ci_output.log | sed 's/.*Model ID: //') || true
+        ACCURACY=$(grep "Model Accuracy:" sample_ci_output.log | sed 's/.*Model Accuracy: //') || true
+
+        echo "PROJECT_CODE=$PROJECT_CODE" >> $GITHUB_OUTPUT
+        echo "MODEL_ID=$MODEL_ID" >> $GITHUB_OUTPUT
+        echo "ACCURACY=$ACCURACY" >> $GITHUB_OUTPUT
+
+    - name: Upload artifacts (logs & model)
+      uses: actions/upload-artifact@v3
+      with:
+        name: sample-ci-artifacts
+        path: |
+          sample_ci_output.log
+          sample_external_project/models/*.pkl
+        if-no-files-found: warn
+
+    - name: Comment PR with project code (optional)
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const projectCode = '${{ steps.train_evaluate.outputs.PROJECT_CODE }}';
+          const accuracy = '${{ steps.train_evaluate.outputs.ACCURACY }}';
+          const dashboardUrl = process.env.DASHBOARD_API_URL || 'http://localhost:8501';
+          const body = `## 🤖 Sample ML CI Results\n\n` +
+            `🔑 Project Code: \`${projectCode || 'n/a'}\`\n` +
+            `🎯 Accuracy: ${accuracy || 'n/a'}\n\n` +
+            `[View in Dashboard](${dashboardUrl}/?project_code=${projectCode || ''})`;
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body
+          });
+      env:
+        DASHBOARD_API_URL: ${{ secrets.DASHBOARD_API_URL }}

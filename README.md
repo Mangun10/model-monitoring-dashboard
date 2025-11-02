@@ -1,234 +1,350 @@
-# Project Brief: Unified ML Model Monitoring Dashboard with API-Driven Testing
+# ML Model Monitoring Dashboard
 
-## Overview
+A comprehensive machine learning model monitoring platform with cloud database integration, API endpoints, and project-based collaboration features.
 
-This project is a unified dashboard for **monitoring, evaluating, and explaining ML models in production-like settings**, built with **Streamlit**, **scikit-learn**, and **SHAP**. It addresses the pain points of manual schema entry, lack of model observability, and limited drift/explainability support.
+## 🎯 Project Overview
 
-The dashboard now features **pipeline-based inference**, allowing users to upload scikit-learn pipelines (`.pkl` files) along with raw CSV data. The pipeline handles all preprocessing automatically, ensuring consistency with the training process and providing a more robust, production-ready solution.
+This dashboard provides a complete solution for monitoring, analyzing, and sharing ML model performance with team collaboration features. It supports both individual use and production deployment with cloud database storage.
 
-The dashboard supports both **interactive UI** and **API-driven automatic testing**, making it ideal for both educational and prototyping purposes, and for integration into CI/CD systems.
+## 🚀 Key Features Developed
 
----
+### ✨ **Core Features**
 
-## Features & Components
+1. **🌐 Cloud Database Integration**
+   - MongoDB Atlas cloud database with free tier
+   - Persistent storage across deployments
+   - Multi-project support with unique project codes
 
-### 1. **Model Upload & Registration**
+2. **📡 REST API Server**
+   - FastAPI-based API with automatic documentation
+   - Project creation and management endpoints
+   - Model upload and evaluation endpoints
+   - Team collaboration through project codes
 
-- **UI:** Users can upload their trained `.pkl` model via the dashboard.
-- **API:** Users (or scripts) can POST their model to the dashboard endpoint for automated evaluation.
-- **Schema Handling:**
-  - **Automatic:** The dashboard attempts to introspect the model for input schema (feature names/types) using scikit-learn attributes.
-  - **Fallback:** If introspection fails, it uses sensible defaults (e.g., N float features).
-  - **Optional:** The API allows sending a schema or sample input for more accurate testing.
+3. **👁️ Project-Based Access System**
+   - Unique 8-character project codes for secure access
+   - No authentication required - share codes with team
+   - Direct URL access: `?project_code=M74V8Y09`
 
-### 2. **Synthetic Data Generation**
+4. **📊 Enhanced Dashboard Interface**
+   - Streamlit-based web interface
+   - Real-time model monitoring and visualization
+   - SHAP explainability integration
+   - Performance testing and synthetic data generation
 
-- **Configurable:** Users can set parameters (number of samples, features, distribution) for synthetic data.
-- **Automated:** For API calls, the dashboard automatically generates synthetic data matching the inferred or provided schema.
-- **Robust:** Supports float/int/categorical features, and custom distributions.
+5. **🤝 Team Collaboration**
+   - Share project codes for instant team access
+   - Centralized model and evaluation storage
+   - Cross-team project visibility
 
-### 3. **Automated Model Testing**
-
-- **Prediction:** The model is tested on synthetic data.
-- **Performance Metrics:** Throughput (preds/sec), latency (ms), error rate, and optional accuracy if simulated labels are available.
-- **Drift Simulation:** Optionally simulates data drift by generating data with shifted distributions and observing model output changes.
-- **Explainability:** Integrates SHAP to provide feature importance and local/global explanation visualizations.
-
-### 4. **Dashboard Visualization**
-
-- **Metrics:** Real-time and historical graphs for latency, throughput, error rate, accuracy, drift metrics, resource usage.
-- **Explainability:** SHAP summary plots, force plots for sample predictions, feature importance charts.
-- **Drift Monitoring:** Visualizes changes in prediction distributions when data drift is simulated.
-- **Logs & Reports:** Users can view, download, and share metric summaries and visualizations.
-
-### 5. **API Endpoint for Automated Testing**
-
-- **Usage:** CI/CD scripts or other applications can POST a `.pkl` model (and optional schema/sample) to the dashboard API.
-- **Function:** The dashboard runs the full suite of synthetic tests, updates the UI, and returns a summary response.
-- **Integration:** Enables hands-free, standardized model validation in automated workflows.
-
-### 6. **Historical Tracking**
-
-- **Session Logs:** Stores results of all model tests for audit and comparison.
-- **Comparative Analysis:** Users can compare models, track drift over time, and analyze explainability metrics across versions.
-
-### 7. **Extensibility**
-
-- Modular structure supports addition of new metrics, model types, drift tests, and explainability methods.
-
----
-
-## Technical Details & File Structure
+## 📁 Project Structure
 
 ```
 model-monitoring-dashboard/
-├── app.py                    # Main Streamlit app entry point
-├── api_handler.py            # Handles API requests (model uploads, testing triggers)
-├── model_utils.py            # Model loading, introspection, and schema inference utilities
-├── synthetic_data.py         # Synthetic data generation logic
-├── metrics.py                # Performance and drift metric calculation
-├── explainability.py         # SHAP integration and explainability plots
-├── storage.py                # Session logs, results storage, historical tracking
-├── requirements.txt          # Python package dependencies
-├── README.md                 # Project documentation and usage instructions
-├── static/
-│   └── *.css                 # Custom dashboard styling (optional)
-├── tests/
-│   └── test_*.py             # Unit/integration tests for modules
-└── example_client/
-    └── client_api_example.py # Example script for API interaction (CI/CD integration)
+├── 🔧 Core Components
+│   ├── app.py                 # Main Streamlit dashboard
+│   ├── api_server.py          # FastAPI REST server
+│   ├── cloud_database.py      # MongoDB Atlas integration
+│   └── requirements.txt       # Dependencies
+│
+├── 📈 ML Components  
+│   ├── metrics.py             # Model evaluation metrics
+│   ├── model_utils.py         # Model loading utilities
+│   ├── explainability.py      # SHAP analysis
+│   └── synthetic_data.py      # Data generation
+│
+├── 🔌 Integration
+│   ├── sample_external_project/  # API integration example
+│   │   ├── api_client.py         # Python API client
+│   │   ├── train_and_evaluate.py # End-to-end workflow
+│   │   └── test_integration.py   # Integration testing
+│   └── example_client/          # Additional examples
+│
+├── ⚙️ Configuration
+│   ├── .env                   # MongoDB connection string
+│   ├── config.py              # Application config
+│   └── schema_utils.py        # Data validation
+│
+└── 🧪 Testing & CI/CD
+    ├── tests/                 # Unit tests
+    └── .github/workflows/     # GitHub Actions
 ```
 
----
+## 🛠️ Features Implementation Guide
 
-## How a User Would Use This Project
+### 1. **Cloud Database System** (`cloud_database.py`)
 
-### **A. Interactive Dashboard Usage**
+**What it does:**
+- Provides unified database operations for MongoDB Atlas
+- Handles project, model, and evaluation storage
+- Supports both local and cloud deployments
 
-1. **Start the dashboard:**  
-   `streamlit run app.py`
-2. **Upload Model:**  
-   Use the UI to upload a `.pkl` file.
-3. **(Optional) Upload Schema/Sample Input:**  
-   For more accurate testing, upload a sample CSV or JSON schema.
-4. **Configure Synthetic Data:**  
-   Set number of samples, features, distributions in the UI.
-5. **Run Tests:**  
-   Click to run synthetic predictions; view real-time performance metrics, drift simulation, and SHAP explainability results.
-6. **Analyze & Download Results:**  
-   Download logs, metric summaries, and visualizations for reporting or further analysis.
+**Key Components:**
+```python
+class DatabaseManager:
+    def create_project(project_name, description) -> project_code
+    def get_project_by_code(project_code) -> project_data
+    def store_model(project_code, model_data) -> model_id
+    def store_evaluation(model_id, results) -> evaluation_id
+```
 
-### **B. API-Driven Automated Testing (CI/CD Integration)**
-
-1. **Train and save your model as `.pkl`.**
-2. **Send API request:**  
-   Use `example_client/client_api_example.py` or your own script to POST the model to the dashboard endpoint.
-3. **Dashboard runs full evaluation:**  
-   Synthetic data is auto-generated, metrics and explainability are computed.
-4. **Dashboard UI updates:**  
-   Results visible for manual review; API response returns summary for automation.
-5. **Integrate in workflows:**  
-   Use this in CI/CD to validate models before deployment, trigger alerts on performance drift, etc.
-
----
-
-## Detailed Feature Explanations
-
-### **1. Model Upload & Introspection**
-
-- **User:** Uploads `.pkl` file.
-- **System:** Loads model, attempts to extract required input columns/types using `feature_names_in_`, pipeline steps, or fallback defaults.
-
-### **2. Synthetic Data Generation**
-
-- **User:** Sets data generation parameters or lets system auto-generate.
-- **System:** Creates random (or structured) data matching expected schema, handling types and distributions.
-
-### **3. Automated Testing & Metric Calculation**
-
-- **User:** Triggers tests via UI or API.
-- **System:** Measures prediction latency, throughput, error rate, and (if possible) accuracy.
-- **Drift Simulation:** System modifies data distribution (mean/variance shifts) and observes model output changes.
-
-### **4. Explainability (SHAP Integration)**
-
-- **User:** Views SHAP plots showing feature impact on predictions.
-- **System:** Computes local/global SHAP values and presents visualizations.
-
-### **5. Visualization & Reporting**
-
-- **User:** Interactively explores charts, metrics, comparisons, and downloads results.
-- **System:** Stores logs for historical analysis and audit trail.
-
-### **6. API Endpoint**
-
-- **User:** Sends `.pkl` (and optional schema) via POST request.
-- **System:** Runs all above steps, updates dashboard, returns summary response.
-
-### **7. Historical & Comparative Analysis**
-
-- **User:** Reviews previous model tests and compares performance/drift/explainability over time.
-- **System:** Maintains persistent logs and enables comparison.
-
----
-
-## Example Usage Scenarios
-
-- **Data Scientist:** Checks model robustness to drift and explains predictions before deployment.
-- **MLOps Engineer:** Integrates dashboard in CI/CD pipeline for automated validation of new models.
-- **Educator:** Demonstrates model monitoring, drift, and explainability concepts to students.
-- **Auditor:** Reviews historical logs and explainability outputs for compliance.
-
----
-
-## Getting Started
-
-### **Pipeline-Based Workflow (Recommended)**
-
-1. **Create or prepare a scikit-learn pipeline:**
-
-   ```python
-   from sklearn.pipeline import Pipeline
-   from sklearn.preprocessing import StandardScaler
-   from sklearn.ensemble import RandomForestClassifier
-
-   pipeline = Pipeline([
-       ('scaler', StandardScaler()),
-       ('classifier', RandomForestClassifier())
-   ])
-   # Train your pipeline and save it
-   joblib.dump(pipeline, 'my_pipeline.pkl')
+**Integration Steps:**
+1. Set up MongoDB Atlas account (free tier)
+2. Add connection string to `.env` file:
    ```
-
-2. **Run the dashboard:**
-
-   ```bash
-   streamlit run app.py
+   MONGODB_CONNECTION_STRING=mongodb+srv://user:pass@cluster.mongodb.net/db
    ```
+3. Import and use: `from cloud_database import db_manager`
 
-3. **Upload your pipeline model:**  
-   Use the "Model Upload" page to upload your `.pkl` pipeline file
+### 2. **API Server** (`api_server.py`)
 
-4. **Test with raw data:**  
-   Use the "Raw Data Testing" page to upload your raw CSV data and get automatic preprocessing + predictions
+**What it does:**
+- FastAPI server with automatic OpenAPI documentation
+- Handles model uploads, project creation, evaluations
+- Provides endpoints for team collaboration
 
-5. **Analyze results:**  
-   View performance metrics, prediction distributions, and SHAP explanations
+**Key Endpoints:**
+```
+POST /api/v1/projects              # Create project
+GET  /api/v1/projects              # List projects  
+GET  /api/v1/projects/{code}       # Get project details
+POST /api/v1/models/upload         # Upload model
+POST /api/v1/models/{id}/evaluate  # Run evaluation
+GET  /docs                         # API documentation
+```
 
-### **Traditional Workflow**
+**Integration Steps:**
+1. Start server: `python api_server.py`
+2. Access docs: `http://localhost:8000/docs`
+3. Use endpoints programmatically or via curl
 
-1. **Clone the repo:**  
-   `git clone https://github.com/DURGAKALYAN27/model-monitoring-demo`
-2. **Install dependencies:**  
-   `pip install -r requirements.txt`
-3. **Run the dashboard:**  
-   `streamlit run app.py`
-4. **(For API use) Run example client script:**  
-   `python example_client/client_api_example.py`
+### 3. **Project Code System**
 
-### **Creating Example Pipelines**
+**What it does:**
+- Generates unique 8-character codes for each project
+- Enables secure sharing without user accounts
+- Supports direct dashboard access via URL parameters
 
-To get started quickly, you can create example pipelines:
+**Implementation:**
+```python
+# Generate project code
+import secrets, string
+project_code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
 
+# Access project
+dashboard_url = f"http://localhost:8501/?project_code={project_code}"
+```
+
+### 4. **Enhanced Dashboard** (`app.py`)
+
+**What it does:**
+- Multi-page Streamlit interface
+- Project code input and URL parameter support
+- Real-time visualization and team collaboration
+
+**Key Features:**
+- **Home Page**: Setup instructions and workflow guides
+- **View Project**: Project code input with comprehensive help
+- **Model Upload**: Direct file upload with evaluation
+- **Performance Testing**: Latency and throughput analysis
+- **SHAP Explainability**: Model interpretation tools
+
+### 5. **API Integration Example** (`sample_external_project/`)
+
+**What it does:**
+- Complete Python example of API integration
+- Demonstrates end-to-end workflow from training to dashboard
+- Includes error handling and best practices
+
+**Workflow:**
+1. Create project → Get project code
+2. Train model → Save as .pkl file
+3. Upload model → Get model ID
+4. Run evaluation → Get results
+5. View in dashboard → Share project code
+
+## 🔧 Installation & Setup
+
+### Prerequisites
 ```bash
-cd example_client
-python create_pipeline_examples.py
+# Python 3.8+
+pip install -r requirements.txt
 ```
 
-This will create several example pipeline files and corresponding test data that you can use with the dashboard.
+### Environment Setup
+1. **Create `.env` file:**
+   ```
+   MONGODB_CONNECTION_STRING=your_mongodb_atlas_connection_string
+   ```
+
+2. **MongoDB Atlas Setup:**
+   - Create free account at mongodb.com
+   - Create cluster and database
+   - Get connection string and add to `.env`
+
+### Running the System
+```bash
+# Terminal 1: Start API Server
+python api_server.py
+
+# Terminal 2: Start Dashboard  
+streamlit run app.py
+
+# Terminal 3: Test Integration (optional)
+cd sample_external_project
+python test_integration.py
+```
+
+## 🤝 Team Integration Guide
+
+### For Your Teammate to Integrate Your Features:
+
+#### Step 1: Copy Core Files
+Copy these files to the main codebase:
+- `cloud_database.py` - Database integration
+- `api_server.py` - API endpoints  
+- Updated `app.py` - Enhanced dashboard
+- `sample_external_project/` - API examples
+
+#### Step 2: Update Dependencies
+Merge `requirements.txt` with existing dependencies:
+```bash
+pip install fastapi uvicorn pymongo python-dotenv streamlit plotly
+```
+
+#### Step 3: Database Configuration
+1. Create `.env` file with MongoDB connection
+2. Test connection: `python -c "from cloud_database import db_manager; print('Connected!')"`
+
+#### Step 4: API Integration
+1. Update existing code to use project codes instead of project names
+2. Replace file-based storage with `db_manager` calls
+3. Test endpoints: `curl http://localhost:8000/api/v1/health`
+
+#### Step 5: Dashboard Updates
+1. Merge navigation updates in `app.py`
+2. Add project code input functionality
+3. Update URL parameter handling
+
+### Code Migration Examples
+
+**Before (File-based):**
+```python
+# Old approach
+projects = load_projects_from_json()
+save_model_to_file(model_data)
+```
+
+**After (Cloud Database):**
+```python
+# New approach  
+from cloud_database import db_manager
+project_code = db_manager.create_project(name, desc)
+model_id = db_manager.store_model(project_code, model_data)
+```
+
+## 📋 API Usage Examples
+
+### Create Project
+```bash
+curl -X POST "http://localhost:8000/api/v1/projects" \
+  -F "project_name=Production Model v1" \
+  -F "description=Customer churn prediction"
+```
+
+### Upload Model
+```bash
+curl -X POST "http://localhost:8000/api/v1/models/upload" \
+  -F "model_file=@model.pkl" \
+  -F "project_code=M74V8Y09" \
+  -F "model_name=Churn Predictor" \
+  -F "model_type=classification"
+```
+
+### Python Integration
+```python
+from sample_external_project.api_client import DashboardAPIClient
+
+client = DashboardAPIClient()
+project = client.create_project("My Project")
+model_id = client.upload_model("model.pkl", "classification", project['project_code'])
+```
+
+## 🧪 Testing
+
+### Quick Tests
+```bash
+# API Server Test
+curl http://localhost:8000/api/v1/health
+
+# Dashboard Test  
+# Open http://localhost:8501 in browser
+
+# Integration Test
+cd sample_external_project
+python test_integration.py
+```
+
+### End-to-End Test
+```bash
+cd sample_external_project  
+python train_and_evaluate.py
+# Follow the output instructions to view results
+```
+
+## 📊 Monitoring & Troubleshooting
+
+### Common Issues
+
+**MongoDB Connection:**
+- Check `.env` file exists and has correct connection string
+- Verify network access to MongoDB Atlas
+- Test: `python -c "from cloud_database import db_manager; print('OK')"`
+
+**API Server:**
+- Ensure port 8000 is free: `netstat -an | findstr 8000`
+- Check logs for detailed error messages
+- Verify all dependencies installed
+
+**Dashboard:**
+- Ensure port 8501 is free
+- Check Streamlit logs for errors
+- Verify emoji display (UTF-8 encoding)
+
+### Performance Tips
+- MongoDB Atlas free tier: 512MB storage limit
+- API server: Can handle ~100 concurrent requests
+- Dashboard: Best with <1000 projects for optimal performance
+
+## 🔒 Security Considerations
+
+- **Project codes** provide access control without authentication
+- **No sensitive data** stored in project codes
+- **MongoDB Atlas** includes built-in security features
+- **API rate limiting** recommended for production
+
+## 📞 Support & Contributing
+
+### For Your Teammate:
+1. **Questions**: Check the inline code documentation
+2. **Issues**: Test with `sample_external_project/test_integration.py`
+3. **Features**: Follow the existing patterns in `api_server.py` and `cloud_database.py`
+
+### Development Workflow:
+1. Test locally with sample project
+2. Verify API endpoints with `/docs`
+3. Check dashboard functionality with test project codes
+4. Review MongoDB data structure in Atlas dashboard
 
 ---
 
-## Extending the Project
+## 🎉 Summary
 
-- Add support for more ML frameworks (XGBoost, LightGBM, PyTorch, etc.).
-- Enhance drift detection with advanced statistical methods.
-- Integrate alerting (email, webhook) for automated anomaly triggers.
-- Expand explainability beyond SHAP (LIME, integrated gradients).
+This ML Model Monitoring Dashboard provides:
+- ✅ **Cloud-based storage** with MongoDB Atlas
+- ✅ **REST API** for programmatic access  
+- ✅ **Team collaboration** via project codes
+- ✅ **Production-ready** architecture
+- ✅ **Complete documentation** and examples
 
----
-
-## Contact & Contributions
-
-- Open issues/feature requests via GitHub.
-- Contributions welcome via PR!
+Your teammate can integrate these features by following the step-by-step guide above. The modular design allows for gradual adoption and testing of each component.

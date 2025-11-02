@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Simple ML Model Monitoring Dashboard
 """
@@ -29,6 +30,16 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Ensure proper emoji rendering
+import locale
+try:
+    locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+except:
+    try:
+        locale.setlocale(locale.LC_ALL, 'C.UTF-8')
+    except:
+        pass  # Use system default
 
 # Custom CSS
 st.markdown("""
@@ -131,7 +142,13 @@ def main():
     """Main application function."""
     
     # Header
-    st.markdown('<h1 class="main-header">🤖 ML Model Monitoring Dashboard</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-header">ML Model Monitoring Dashboard</h1>', unsafe_allow_html=True)
+    
+    # Check for URL parameters to auto-navigate to View Project
+    query_params = st.query_params
+    if "project_code" in query_params:
+        if st.session_state.current_page != "👁️ View Project":
+            st.session_state.current_page = "👁️ View Project"
     
     # Sidebar navigation
     st.sidebar.title("Navigation")
@@ -143,7 +160,8 @@ def main():
         "📈 Results & Analytics",
         "🎲 Data Generation",
         "⚡ Performance Testing",
-        "🔍 SHAP Explainability"
+        "🔍 SHAP Explainability",
+        "👁️ View Project"
     ]
     
     selected_page = st.sidebar.radio(
@@ -170,11 +188,13 @@ def main():
         show_performance_testing_page()
     elif st.session_state.current_page == "🔍 SHAP Explainability":
         show_shap_page()
+    elif st.session_state.current_page == "👁️ View Project":
+        show_view_project_page()
 
 def show_home_page():
     """Display the home page."""
     
-    st.markdown("## Welcome to the ML Model Monitoring Dashboard")
+    st.markdown("## 🤖 Welcome to the ML Model Monitoring Dashboard")
     
     col1, col2 = st.columns([2, 1])
     
@@ -182,23 +202,161 @@ def show_home_page():
         st.markdown("""
         ### 🎯 What is this dashboard?
         
-        A comprehensive tool to upload your machine learning models and test their performance with advanced analytics.
+        A comprehensive ML model monitoring platform with **cloud database storage** and **project management**. 
+        Monitor performance, analyze metrics, and share results with your team.
         
-        ### 🚀 Workflow:
+        ### 🚀 Choose Your Workflow:
         
-        1. **📁 Model Upload**: Upload your trained model (.pkl file)
-        2. **📊 Dataset Upload**: Upload your test dataset (CSV file) 
-        3. **📈 Results & Analytics**: View performance metrics and visualizations
-        4. **🎲 Data Generation**: Generate synthetic test data
-        5. **⚡ Performance Testing**: Test model latency and throughput
-        6. **🔍 SHAP Explainability**: Understand model predictions
+        #### 🌐 **Recommended: API Integration (Team/Production)**
+        **Perfect for**: Production environments, team collaboration, automated workflows
         
-        ### 🔧 Supported Models
+        1. **🆕 Create Project** → Get unique project code (e.g., `M74V8Y09`)
+        2. **📤 Upload Models** → Send models via API to your project  
+        3. **🧪 Run Evaluations** → Automate testing with API calls
+        4. **�️ View Results** → Enter project code to see everything
+        5. **🔗 Share** → Give project code to teammates for access
         
-        - Classification models (Random Forest, SVM, etc.)
-        - Regression models (Linear Regression, etc.)
-        - Any scikit-learn compatible model
+        #### 📱 **Quick Start: Direct Upload**
+        **Perfect for**: Individual use, experimentation, quick testing
+        
+        1. **📁 Model Upload** → Upload your .pkl model file
+        2. **📊 Dataset Upload** → Upload test dataset (CSV)  
+        3. **📈 View Results** → See metrics and visualizations instantly
+        4. **🎲 Generate Data** → Create synthetic test data
+        5. **⚡ Performance Test** → Check model speed
+        6. **🔍 Explainability** → Understand predictions with SHAP
+        
+        ### ✅ Supported Models
+        
+        - **Classification**: Random Forest, SVM, Logistic Regression, Neural Networks
+        - **Regression**: Linear Regression, XGBoost, Random Forest, Deep Learning
+        - **Requirements**: Any scikit-learn compatible model saved as `.pkl` file
+        
+        ### 🎯 Quick Start Guide
+        
+        **New User?** → Start with "📁 Model Upload" to try it out  
+        **Production Ready?** → Use API integration (see guide below) ↓  
+        **Need Help?** → Check the detailed guides in each section
         """)
+        
+        # API Integration Guide
+        with st.expander("📚 **Complete API Integration Guide** (Click to expand)"):
+            st.markdown("""
+            ### � Step-by-Step Setup
+            
+            #### 1️⃣ Start the API Server
+            ```bash
+            # Navigate to your dashboard directory
+            python api_server.py
+            ```
+            ✅ **Expected**: Server runs on `http://localhost:8000`  
+            🔍 **Check**: Visit `http://localhost:8000/docs` for API documentation
+            
+            #### 2️⃣ Create Your Project  
+            ```bash
+            curl -X POST "http://localhost:8000/api/v1/projects" \\
+              -F "project_name=My ML Project" \\
+              -F "description=Production model monitoring"
+            ```
+            
+            #### 3️⃣ Save Your Project Code
+            **Response Example:**
+            ```json
+            {
+              "project_code": "M74V8Y09",  ← YOUR UNIQUE CODE
+              "project_name": "My ML Project", 
+              "message": "Project created successfully"
+            }
+            ```
+            💡 **Important**: Save `M74V8Y09` - you'll need it to access your project!
+            
+            #### 4️⃣ Upload Your Model
+            ```bash
+            curl -X POST "http://localhost:8000/api/v1/models/upload" \\
+              -F "model_file=@my_model.pkl" \\
+              -F "project_code=M74V8Y09" \\
+              -F "model_name=Production Model v1" \\
+              -F "model_version=1.0" \\
+              -F "model_type=classification"
+            ```
+            
+            #### 5️⃣ View Your Results
+            - Click "👁️ View Project" in the sidebar
+            - Enter your project code: `M74V8Y09`  
+            - See all models, evaluations, and metrics!
+            - **Share the code** with teammates for instant access
+            
+            ### �️ Available API Endpoints
+            | Endpoint | Purpose | Method |
+            |----------|---------|---------|
+            | `/docs` | Interactive API documentation | GET |
+            | `/api/v1/health` | Check server status | GET |
+            | `/api/v1/projects` | List all projects | GET |
+            | `/api/v1/projects` | Create new project | POST |
+            | `/api/v1/models/upload` | Upload model file | POST |
+            | `/api/v1/models/{id}/evaluate` | Run model evaluation | POST |
+            
+            ### 📁 Sample Code & Examples
+            **Python Integration**: Check `sample_external_project/` folder  
+            **API Testing**: Use the interactive docs at `http://localhost:8000/docs`  
+            **Troubleshooting**: Run `python test_integration.py` in sample project
+            
+            ### 🔒 Security & Access
+            - **Project codes** provide secure access without authentication
+            - **Cloud storage** with MongoDB Atlas (free tier)
+            - **Team sharing** via project codes
+            - **No user accounts** needed - just share the project code!
+            """)
+    
+    with col2:
+        st.markdown("### 📊 Dashboard Status")
+        
+        # Model status
+        if st.session_state.model is not None:
+            st.success("✅ Model Loaded")
+            
+            **2. Create a Project:**
+            ```bash
+            curl -X POST "http://localhost:8000/api/v1/projects" \\
+              -F "project_name=My ML Project" \\
+              -F "description=My awesome ML project"
+            ```
+            
+            **3. You'll get a response like:**
+            ```json
+            {
+              "project_code": "M74V8Y09",
+              "project_name": "My ML Project",
+              "message": "Project created successfully"
+            }
+            ```
+            
+            **4. Upload a Model:**
+            ```bash
+            curl -X POST "http://localhost:8000/api/v1/models/upload" \\
+              -F "model_file=@my_model.pkl" \\
+              -F "project_code=M74V8Y09" \\
+              -F "model_name=My Model" \\
+              -F "model_version=1.0" \\
+              -F "model_type=classification"
+            ```
+            
+            **5. View Results:**
+            - Go to "👁️ View Project" 
+            - Enter your project code: `M74V8Y09`
+            - See all models, evaluations, and metrics!
+            
+            ### 🔧 API Endpoints
+            - **API Docs**: http://localhost:8000/docs
+            - **Health Check**: http://localhost:8000/api/v1/health
+            - **List Projects**: GET /api/v1/projects
+            - **Create Project**: POST /api/v1/projects
+            - **Upload Model**: POST /api/v1/models/upload
+            - **Evaluate Model**: POST /api/v1/models/{model_id}/evaluate
+            
+            ### 📁 Sample Code
+            Check the `sample_external_project/` folder for a complete Python example!
+            """)
     
     with col2:
         st.markdown("### 📊 Current Status")
@@ -967,6 +1125,332 @@ def show_shap_page():
                 
             except Exception as e:
                 st.error(f"❌ Error generating explanations: {str(e)}")
+
+def show_view_project_page():
+    """View project by project code."""
+    
+    st.markdown("## 👁️ View Project")
+    st.markdown("**Access your ML projects instantly with a project code** - View models, evaluations, and share with your team")
+    
+    # Import cloud database
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+        from cloud_database import db_manager
+    except ImportError as e:
+        st.error(f"❌ Database module not available: {str(e)}")
+        st.info("Please make sure MongoDB is configured properly.")
+        return
+    
+    # Check for URL parameter
+    query_params = st.query_params
+    url_project_code = query_params.get("project_code", None)
+    
+    # Create columns for better layout
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        # Project code input
+        project_code_input = st.text_input(
+            "🔑 Enter Project Code",
+            value=url_project_code if url_project_code else "",
+            placeholder="e.g., M74V8Y09",
+            help="Enter the 8-character project code to view project details"
+        )
+    
+    with col2:
+        st.markdown("### 💡 Quick Tips")
+        st.info("🔗 **Bookmark**: Add `?project_code=YOUR_CODE` to URL for direct access")
+    
+    if not project_code_input:
+        st.markdown("---")
+        
+        # Enhanced instructions when no project code is entered
+        col1, col2 = st.columns([1, 1])
+        
+        with col1:
+            st.markdown("""
+            ### 🆕 Don't have a project code?
+            
+            #### ⚡ Quick Start (API)
+            1. **Start API server**:
+               ```bash
+               python api_server.py
+               ```
+            
+            2. **Create project**:
+               ```bash
+               curl -X POST "http://localhost:8000/api/v1/projects" \\
+                 -F "project_name=My ML Project" \\
+                 -F "description=Production monitoring"
+               ```
+            
+            3. **Get your code**: Look for `"project_code": "M74V8Y09"` in response
+            
+            4. **Enter code above** ↑ to view your project
+            """)
+        
+        with col2:
+            st.markdown("""
+            ### 🐍 Python Integration
+            
+            #### Using the Sample Project
+            ```bash
+            cd sample_external_project
+            python train_and_evaluate.py
+            ```
+            **Result**: Creates project + uploads model + returns code
+            
+            #### Custom Integration  
+            ```python
+            from api_client import DashboardAPIClient
+            
+            client = DashboardAPIClient()
+            project = client.create_project(
+                project_name="My Project",
+                description="Production monitoring"
+            )
+            print(f"Code: {project['project_code']}")
+            ```
+            """)
+        
+        st.markdown("---")
+        
+        with st.expander("🔧 **Complete Setup Guide** (Click to expand)"):
+            st.markdown("""
+            ### 🛠️ Full Setup Instructions
+            
+            #### Prerequisites
+            - API Server: `python api_server.py` (runs on port 8000)
+            - Dashboard: `streamlit run app.py` (runs on port 8501)
+            - MongoDB: Configured with cloud database (automatic)
+            
+            #### Step-by-Step Project Creation
+            
+            **Option 1: Using cURL**
+            ```bash
+            # Create project
+            curl -X POST "http://localhost:8000/api/v1/projects" \\
+              -F "project_name=Production Model v1" \\
+              -F "description=Customer churn prediction model" \\
+              -F "github_repo=https://github.com/myorg/ml-project"
+            
+            # Upload model (after creating project)
+            curl -X POST "http://localhost:8000/api/v1/models/upload" \\
+              -F "model_file=@my_model.pkl" \\
+              -F "project_code=YOUR_CODE_HERE" \\
+              -F "model_name=Churn Predictor" \\
+              -F "model_version=2.1" \\
+              -F "model_type=classification"
+            ```
+            
+            **Option 2: Using Python**
+            ```python
+            import requests
+            
+            # Create project
+            response = requests.post(
+                "http://localhost:8000/api/v1/projects",
+                data={
+                    "project_name": "Production Model v1",
+                    "description": "Customer churn prediction"
+                }
+            )
+            project_code = response.json()["project_code"]
+            print(f"Your project code: {project_code}")
+            
+            # Upload model
+            with open("my_model.pkl", "rb") as f:
+                requests.post(
+                    "http://localhost:8000/api/v1/models/upload",
+                    files={"model_file": f},
+                    data={
+                        "project_code": project_code,
+                        "model_name": "Churn Predictor",
+                        "model_version": "2.1",
+                        "model_type": "classification"
+                    }
+                )
+            ```
+            
+            #### � Troubleshooting
+            - **API not responding**: Check if `python api_server.py` is running
+            - **Database errors**: Verify `.env` file has MongoDB connection string
+            - **Upload fails**: Ensure model is saved as `.pkl` file and project code is correct
+            - **Code not found**: Double-check project code spelling and case
+            
+            #### 🌐 Useful Links
+            - **API Documentation**: http://localhost:8000/docs
+            - **Server Health**: http://localhost:8000/api/v1/health  
+            - **List All Projects**: http://localhost:8000/api/v1/projects
+            """)
+        
+        return
+    
+    # Fetch project data
+    try:
+        project_code = project_code_input.strip().upper()
+        project_data = db_manager.get_project_by_code(project_code)
+        
+        if not project_data:
+            st.error(f"❌ Project code '{project_code}' not found")
+            st.info("Please check the project code and try again, or create a new project via the API.")
+            return
+        
+        # Get models and evaluations
+        all_models = db_manager.get_models_by_project(project_code)
+        all_evaluations = db_manager.get_evaluations_by_project(project_code)
+        
+        # Display project details
+        st.success(f"✅ Project Found: **{project_data['project_name']}**")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("📦 Project Code", project_code)
+        with col2:
+            st.metric("🤖 Models", len(all_models))
+        with col3:
+            st.metric("📊 Evaluations", len(all_evaluations))
+        with col4:
+            created_date = project_data.get("created_at", "Unknown")[:10] if project_data.get("created_at") else "Unknown"
+            st.metric("📅 Created", created_date)
+        
+        # Project description
+        if project_data.get("description"):
+            st.info(f"📝 **Description**: {project_data['description']}")
+        
+        # Models section
+        if all_models:
+            st.markdown("### 🤖 Models")
+            for model in all_models:
+                with st.expander(f"**{model['model_id']}** - {model['model_type']} ({model['status']})"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.write(f"**Type**: {model.get('model_type', 'Unknown')}")
+                        st.write(f"**Filename**: {model.get('filename', 'Unknown')}")
+                        st.write(f"**Status**: {model.get('status', 'Unknown')}")
+                    with col2:
+                        upload_time = model.get('upload_time', 'Unknown')
+                        if upload_time != 'Unknown':
+                            upload_time = upload_time[:19].replace('T', ' ')
+                        st.write(f"**Upload Time**: {upload_time}")
+                        st.write(f"**Description**: {model.get('description', 'No description')}")
+        else:
+            st.info("📭 No models found for this project")
+        
+        # Evaluations section
+        if all_evaluations:
+            st.markdown("### 📈 Evaluations & Results")
+            
+            for evaluation in all_evaluations:
+                eval_time = evaluation.get('evaluation_time', 'Unknown')
+                if eval_time != 'Unknown':
+                    eval_time = eval_time[:19].replace('T', ' ')
+                
+                with st.expander(f"**{evaluation['test_name']}** - {eval_time} ({evaluation['status']})"):
+                    
+                    # Basic info
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Status", evaluation.get('status', 'Unknown'))
+                    with col2:
+                        st.metric("Model ID", evaluation.get('model_id', 'Unknown'))
+                    with col3:
+                        st.metric("Evaluation Time", eval_time)
+                    
+                    # Metrics display
+                    metrics = evaluation.get('metrics', {})
+                    if metrics and not metrics.get('error'):
+                        st.markdown("#### 📏 Performance Metrics")
+                        
+                        # Create metrics display based on type
+                        if 'accuracy' in metrics:  # Classification
+                            col1, col2, col3, col4 = st.columns(4)
+                            with col1:
+                                st.metric("🎯 Accuracy", f"{metrics.get('accuracy', 0):.3f}")
+                            with col2:
+                                st.metric("🔍 Precision", f"{metrics.get('precision', 0):.3f}")
+                            with col3:
+                                st.metric("📡 Recall", f"{metrics.get('recall', 0):.3f}")
+                            with col4:
+                                st.metric("⚖️ F1 Score", f"{metrics.get('f1', 0):.3f}")
+                            
+                            # Confusion Matrix
+                            if 'confusion_matrix' in metrics:
+                                st.markdown("#### 🔢 Confusion Matrix")
+                                import numpy as np
+                                import plotly.express as px
+                                cm = np.array(metrics['confusion_matrix'])
+                                fig = px.imshow(cm, 
+                                               text_auto=True, 
+                                               title="Confusion Matrix",
+                                               color_continuous_scale="Blues")
+                                st.plotly_chart(fig, use_container_width=True)
+                        
+                        else:  # Regression
+                            col1, col2, col3, col4 = st.columns(4)
+                            with col1:
+                                st.metric("📈 R² Score", f"{metrics.get('r2', 0):.3f}")
+                            with col2:
+                                st.metric("📊 RMSE", f"{metrics.get('rmse', 0):.3f}")
+                            with col3:
+                                st.metric("📉 MAE", f"{metrics.get('mae', 0):.3f}")
+                            with col4:
+                                mape = metrics.get('mape', 0)
+                                if mape == float('inf'):
+                                    st.metric("🎯 MAPE", "∞")
+                                else:
+                                    st.metric("🎯 MAPE", f"{mape:.2f}%")
+                    
+                    # Predictions vs Actual (if available)
+                    predictions = evaluation.get('predictions', [])
+                    actual_values = evaluation.get('actual_values', [])
+                    
+                    if predictions and actual_values:
+                        st.markdown("#### 🎯 Predictions vs Actual")
+                        
+                        # Create scatter plot
+                        import pandas as pd
+                        import plotly.express as px
+                        
+                        df_pred = pd.DataFrame({
+                            'Actual': actual_values[:100],  # Limit to first 100 points
+                            'Predicted': predictions[:100]
+                        })
+                        
+                        fig = px.scatter(df_pred, x='Actual', y='Predicted',
+                                       title="Predictions vs Actual Values",
+                                       trendline="ols")
+                        fig.add_shape(
+                            type="line",
+                            line=dict(dash="dash", color="red"),
+                            x0=df_pred['Actual'].min(),
+                            y0=df_pred['Actual'].min(),
+                            x1=df_pred['Actual'].max(),
+                            y1=df_pred['Actual'].max()
+                        )
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        # Show first few predictions
+                        st.markdown("#### 📋 Sample Predictions")
+                        sample_df = df_pred.head(10).copy()
+                        sample_df['Difference'] = abs(sample_df['Actual'] - sample_df['Predicted'])
+                        st.dataframe(sample_df, use_container_width=True)
+                    
+                    else:
+                        st.info("No prediction data available for visualization")
+        else:
+            st.info("📭 No evaluations found for this project")
+        
+        # Share project link
+        st.markdown("### 🔗 Share Project")
+        share_url = f"http://localhost:8501?project_code={project_code}"
+        st.code(share_url, language="text")
+        st.info("👆 Share this URL with your team to give them access to this project")
+        
+    except Exception as e:
+        st.error(f"❌ Error loading project data: {str(e)}")
+        st.info("Make sure the MongoDB connection is working and the project exists.")
 
 if __name__ == "__main__":
     main()

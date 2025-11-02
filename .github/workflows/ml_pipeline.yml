@@ -1,0 +1,90 @@
+name: ML Model CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  train-and-evaluate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Run tests
+      run: |
+        pytest tests/ --verbose
+        
+    - name: Train model
+      run: |
+        python train_model.py
+        
+    - name: Evaluate model
+      id: evaluate
+      run: |
+        python evaluate_model.py
+        
+    - name: Upload metrics to dashboard
+      env:
+        API_URL: ${{ secrets.DASHBOARD_API_URL }}
+        API_KEY: ${{ secrets.DASHBOARD_API_KEY }}
+        PROJECT_CODE: ${{ secrets.PROJECT_CODE }}
+      run: |
+        python ci_upload_metrics.py
+        
+    - name: Upload model artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: trained-model
+        path: models/
+        
+    - name: Create GitHub deployment
+      if: github.ref == 'refs/heads/main'
+      uses: chrnorm/deployment-action@v2
+      with:
+        token: ${{ github.token }}
+        environment: production
+        
+    - name: Comment PR with metrics
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const metrics = JSON.parse(fs.readFileSync('metrics.json', 'utf8'));
+          const comment = `## 📊 Model Performance Metrics
+          
+          - **Accuracy**: ${metrics.accuracy}
+          - **Precision**: ${metrics.precision}
+          - **Recall**: ${metrics.recall}
+          - **F1 Score**: ${metrics.f1}
+          
+          📈 [View full dashboard](${process.env.DASHBOARD_URL}?project=${process.env.PROJECT_CODE})
+          `;
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });

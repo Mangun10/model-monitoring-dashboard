@@ -1,111 +1,55 @@
 """
 Simplified Database Configuration for Cloud Deployment
+Shared MongoDB Atlas Database - All users connect to the same cloud database
 No authentication required - only project code-based access
-Supports both MongoDB and PostgreSQL
 """
 
 import os
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 
-# Detect database type from environment
-DATABASE_TYPE = os.getenv("DATABASE_TYPE", "mongodb")  # mongodb or postgresql
+# Load environment variables
+from dotenv import load_dotenv
+load_dotenv()
 
-if DATABASE_TYPE == "mongodb":
-    # MongoDB Configuration
-    from pymongo import MongoClient
-    from bson import ObjectId
-    
-    MONGODB_URL = os.getenv(
-        "MONGODB_URL",
-        "mongodb://localhost:27017/"
-    )
-    
+# MongoDB Configuration - SHARED CLOUD DATABASE
+from pymongo import MongoClient
+from bson import ObjectId
+
+# Use shared cloud MongoDB Atlas database
+MONGODB_URL = os.getenv("MONGODB_URL")
+
+if not MONGODB_URL:
+    raise ValueError("❌ MONGODB_URL environment variable is required! Please check your .env file.")
+
+try:
     client = MongoClient(MONGODB_URL)
-    db = client['ml_monitoring']
+    # Test the connection
+    client.admin.command('ping')
+    db = client['ml_monitoring']  # Shared database for all users
     
-    # Collections
+    # Collections - shared across all users
     projects_collection = db['projects']
     models_collection = db['models']
     evaluations_collection = db['evaluations']
     
-    # Create indexes for faster queries
-    projects_collection.create_index("project_code", unique=True)
-    models_collection.create_index("model_id", unique=True)
-    evaluations_collection.create_index("evaluation_id", unique=True)
+    # Create indexes for faster queries (safe to run multiple times)
+    try:
+        projects_collection.create_index("project_code", unique=True)
+        models_collection.create_index("model_id", unique=True)
+        evaluations_collection.create_index("evaluation_id", unique=True)
+        models_collection.create_index("project_code")
+        evaluations_collection.create_index("project_code")
+    except Exception:
+        pass  # Indexes may already exist
     
-    print("✅ Connected to MongoDB")
-
-else:
-    # PostgreSQL Configuration
-    from sqlalchemy import create_engine, Column, Integer, String, DateTime, JSON, Text, Boolean
-    from sqlalchemy.ext.declarative import declarative_base
-    from sqlalchemy.orm import sessionmaker
+    print("✅ Connected to shared MongoDB Atlas database")
+    print(f"📊 Database: {db.name}")
     
-    DATABASE_URL = os.getenv(
-        "DATABASE_URL",
-        "postgresql://localhost:5432/ml_monitoring"
-    )
-    
-    engine = create_engine(DATABASE_URL, echo=False)
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    Base = declarative_base()
-    
-    class Project(Base):
-        """Project model."""
-        __tablename__ = "projects"
-        
-        id = Column(Integer, primary_key=True, index=True)
-        project_code = Column(String(20), unique=True, index=True, nullable=False)
-        project_name = Column(String(200), nullable=False)
-        description = Column(Text)
-        created_at = Column(DateTime, default=datetime.utcnow)
-        updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-        github_repo = Column(String(300))
-        is_public = Column(Boolean, default=True)
-    
-    class Model(Base):
-        """Model metadata."""
-        __tablename__ = "models"
-        
-        id = Column(Integer, primary_key=True, index=True)
-        model_id = Column(String(50), unique=True, index=True, nullable=False)
-        project_code = Column(String(20), index=True, nullable=False)
-        model_type = Column(String(50), nullable=False)
-        filename = Column(String(200), nullable=False)
-        file_path = Column(String(500))
-        description = Column(Text)
-        upload_time = Column(DateTime, default=datetime.utcnow)
-        status = Column(String(50), default="uploaded")
-        framework = Column(String(50))
-        version = Column(String(20))
-    
-    class Evaluation(Base):
-        """Evaluation results."""
-        __tablename__ = "evaluations"
-        
-        id = Column(Integer, primary_key=True, index=True)
-        evaluation_id = Column(String(50), unique=True, index=True, nullable=False)
-        model_id = Column(String(50), index=True, nullable=False)
-        project_code = Column(String(20), index=True, nullable=False)
-        test_name = Column(String(100), nullable=False)
-        evaluation_time = Column(DateTime, default=datetime.utcnow)
-        status = Column(String(50), default="completed")
-        
-        # Dataset info and metrics stored as JSON
-        dataset_info = Column(JSON)
-        metrics = Column(JSON, nullable=False)
-        predictions = Column(JSON)
-        actual_values = Column(JSON)
-        
-        # GitHub commit tracking
-        commit_hash = Column(String(40))
-        commit_message = Column(Text)
-        branch_name = Column(String(100))
-    
-    # Create tables
-    Base.metadata.create_all(bind=engine)
-    print("✅ Connected to PostgreSQL")
+except Exception as e:
+    print(f"❌ Failed to connect to MongoDB: {str(e)}")
+    print(f"🔍 Connection string: {MONGODB_URL[:50]}...")
+    raise
 
 
 def generate_project_code() -> str:
@@ -117,18 +61,18 @@ def generate_project_code() -> str:
 
 
 # ========================================
-# Database Operations (works for both DBs)
+# Database Operations - SHARED CLOUD DATABASE
 # ========================================
 
 class DatabaseManager:
-    """Unified database manager for MongoDB and PostgreSQL."""
+    """Unified database manager for shared MongoDB Atlas cloud database."""
     
     def __init__(self):
-        self.db_type = DATABASE_TYPE
+        self.db_type = "mongodb"  # Always use MongoDB cloud database
     
     # PROJECT OPERATIONS
     def create_project(self, project_name: str, description: str = "", github_repo: str = "") -> Dict[str, Any]:
-        """Create a new project with unique code."""
+        """Create a new project with unique code in shared cloud database."""
         project_code = generate_project_code()
         
         project_data = {
@@ -143,231 +87,148 @@ class DatabaseManager:
             "evaluations": []
         }
         
-        if self.db_type == "mongodb":
+        try:
             result = projects_collection.insert_one(project_data)
             project_data['_id'] = str(result.inserted_id)
-        else:
-            db = SessionLocal()
-            try:
-                db_project = Project(**project_data)
-                db.add(db_project)
-                db.commit()
-                db.refresh(db_project)
-            finally:
-                db.close()
-        
-        return project_data
+            print(f"✅ Project created in cloud database: {project_code}")
+            return project_data
+        except Exception as e:
+            print(f"❌ Failed to create project: {str(e)}")
+            raise
     
     def get_project_by_code(self, project_code: str) -> Optional[Dict[str, Any]]:
-        """Get project by code."""
-        if self.db_type == "mongodb":
-            project = projects_collection.find_one({"project_code": project_code})
+        """Get project by code from shared cloud database."""
+        try:
+            project = projects_collection.find_one({"project_code": project_code.upper()})
             if project:
                 project['_id'] = str(project['_id'])
-            return project
-        else:
-            db = SessionLocal()
-            try:
-                project = db.query(Project).filter(Project.project_code == project_code).first()
-                if project:
-                    return {
-                        "project_code": project.project_code,
-                        "project_name": project.project_name,
-                        "description": project.description,
-                        "created_at": project.created_at.isoformat(),
-                        "github_repo": project.github_repo
-                    }
-            finally:
-                db.close()
+                print(f"✅ Project found in cloud database: {project_code}")
+                return project
+            else:
+                print(f"⚠️ Project not found in cloud database: {project_code}")
+                return None
+        except Exception as e:
+            print(f"❌ Error fetching project: {str(e)}")
             return None
     
     def get_all_projects(self) -> List[Dict[str, Any]]:
-        """Get all projects."""
-        if self.db_type == "mongodb":
+        """Get all projects from shared cloud database."""
+        try:
             projects = list(projects_collection.find())
             for p in projects:
                 p['_id'] = str(p['_id'])
+            print(f"✅ Found {len(projects)} projects in cloud database")
             return projects
-        else:
-            db = SessionLocal()
-            try:
-                projects = db.query(Project).all()
-                return [
-                    {
-                        "project_code": p.project_code,
-                        "project_name": p.project_name,
-                        "description": p.description,
-                        "created_at": p.created_at.isoformat()
-                    }
-                    for p in projects
-                ]
-            finally:
-                db.close()
+        except Exception as e:
+            print(f"❌ Error fetching projects: {str(e)}")
+            return []
     
     # MODEL OPERATIONS
     def save_model(self, model_data: Dict[str, Any]) -> bool:
-        """Save model metadata."""
-        if self.db_type == "mongodb":
+        """Save model metadata to shared cloud database."""
+        try:
             models_collection.insert_one(model_data)
             # Update project
             projects_collection.update_one(
                 {"project_code": model_data["project_code"]},
                 {"$addToSet": {"models": model_data["model_id"]}}
             )
-        else:
-            db = SessionLocal()
-            try:
-                db_model = Model(**model_data)
-                db.add(db_model)
-                db.commit()
-            finally:
-                db.close()
-        return True
+            print(f"✅ Model saved to cloud database: {model_data['model_id']}")
+            return True
+        except Exception as e:
+            print(f"❌ Failed to save model: {str(e)}")
+            return False
     
     def get_model_by_id(self, model_id: str) -> Optional[Dict[str, Any]]:
-        """Get a model by its ID."""
-        if self.db_type == "mongodb":
+        """Get a model by its ID from shared cloud database."""
+        try:
             model = models_collection.find_one({"model_id": model_id})
             if model:
                 model['_id'] = str(model['_id'])
             return model
-        else:
-            db = SessionLocal()
-            try:
-                model = db.query(Model).filter(Model.model_id == model_id).first()
-                if model:
-                    return {
-                        "model_id": model.model_id,
-                        "project_code": model.project_code,
-                        "model_type": model.model_type,
-                        "filename": model.filename,
-                        "file_path": model.file_path,
-                        "upload_time": model.upload_time.isoformat(),
-                        "status": model.status,
-                        "description": model.description
-                    }
-            finally:
-                db.close()
+        except Exception as e:
+            print(f"❌ Error fetching model: {str(e)}")
             return None
     
     def get_models_by_project(self, project_code: str) -> List[Dict[str, Any]]:
-        """Get all models for a project."""
-        if self.db_type == "mongodb":
-            models = list(models_collection.find({"project_code": project_code}))
+        """Get all models for a project from shared cloud database."""
+        try:
+            models = list(models_collection.find({"project_code": project_code.upper()}))
             for m in models:
                 m['_id'] = str(m['_id'])
+            print(f"✅ Found {len(models)} models for project {project_code}")
             return models
-        else:
-            db = SessionLocal()
-            try:
-                models = db.query(Model).filter(Model.project_code == project_code).all()
-                return [
-                    {
-                        "model_id": m.model_id,
-                        "project_code": m.project_code,
-                        "model_type": m.model_type,
-                        "filename": m.filename,
-                        "upload_time": m.upload_time.isoformat(),
-                        "status": m.status
-                    }
-                    for m in models
-                ]
-            finally:
-                db.close()
+        except Exception as e:
+            print(f"❌ Error fetching models: {str(e)}")
+            return []
     
     # EVALUATION OPERATIONS
     def save_evaluation(self, eval_data: Dict[str, Any]) -> bool:
-        """Save evaluation results."""
-        if self.db_type == "mongodb":
+        """Save evaluation results to shared cloud database."""
+        try:
             evaluations_collection.insert_one(eval_data)
             # Update project
             projects_collection.update_one(
                 {"project_code": eval_data["project_code"]},
                 {"$addToSet": {"evaluations": eval_data["evaluation_id"]}}
             )
-        else:
-            db = SessionLocal()
-            try:
-                db_eval = Evaluation(**eval_data)
-                db.add(db_eval)
-                db.commit()
-            finally:
-                db.close()
-        return True
+            print(f"✅ Evaluation saved to cloud database: {eval_data['evaluation_id']}")
+            return True
+        except Exception as e:
+            print(f"❌ Failed to save evaluation: {str(e)}")
+            return False
     
     def get_evaluation_by_id(self, evaluation_id: str) -> Optional[Dict[str, Any]]:
-        """Get an evaluation by its ID."""
-        if self.db_type == "mongodb":
+        """Get an evaluation by its ID from shared cloud database."""
+        try:
             evaluation = evaluations_collection.find_one({"evaluation_id": evaluation_id})
             if evaluation:
                 evaluation['_id'] = str(evaluation['_id'])
             return evaluation
-        else:
-            db = SessionLocal()
-            try:
-                evaluation = db.query(Evaluation).filter(Evaluation.evaluation_id == evaluation_id).first()
-                if evaluation:
-                    return {
-                        "evaluation_id": evaluation.evaluation_id,
-                        "model_id": evaluation.model_id,
-                        "project_code": evaluation.project_code,
-                        "test_name": evaluation.test_name,
-                        "metrics": evaluation.metrics,
-                        "dataset_info": evaluation.dataset_info,
-                        "predictions": evaluation.predictions,
-                        "actual_values": evaluation.actual_values,
-                        "evaluation_time": evaluation.evaluation_time.isoformat(),
-                        "status": evaluation.status,
-                        "commit_hash": evaluation.commit_hash
-                    }
-            finally:
-                db.close()
+        except Exception as e:
+            print(f"❌ Error fetching evaluation: {str(e)}")
             return None
     
     def get_evaluations_by_project(self, project_code: str) -> List[Dict[str, Any]]:
-        """Get all evaluations for a project."""
-        if self.db_type == "mongodb":
-            evals = list(evaluations_collection.find({"project_code": project_code}))
+        """Get all evaluations for a project from shared cloud database."""
+        try:
+            evals = list(evaluations_collection.find({"project_code": project_code.upper()}))
             for e in evals:
                 e['_id'] = str(e['_id'])
+            print(f"✅ Found {len(evals)} evaluations for project {project_code}")
             return evals
-        else:
-            db = SessionLocal()
-            try:
-                evals = db.query(Evaluation).filter(Evaluation.project_code == project_code).all()
-                return [
-                    {
-                        "evaluation_id": e.evaluation_id,
-                        "model_id": e.model_id,
-                        "test_name": e.test_name,
-                        "metrics": e.metrics,
-                        "evaluation_time": e.evaluation_time.isoformat(),
-                        "status": e.status,
-                        "commit_hash": e.commit_hash
-                    }
-                    for e in evals
-                ]
-            finally:
-                db.close()
+        except Exception as e:
+            print(f"❌ Error fetching evaluations: {str(e)}")
+            return []
 
 
-# Global database manager instance
+# Global database manager instance - connects to shared cloud database
 db_manager = DatabaseManager()
 
 
 if __name__ == "__main__":
-    print(f"✅ Database configured: {DATABASE_TYPE}")
+    print(f"✅ Database configured: Shared MongoDB Atlas Cloud Database")
     print("✅ Testing database connection...")
     
-    # Test project creation
-    test_project = db_manager.create_project(
-        project_name="Test Project",
-        description="Testing cloud database"
-    )
-    print(f"✅ Test project created: {test_project['project_code']}")
-    
-    # Test retrieval
-    retrieved = db_manager.get_project_by_code(test_project['project_code'])
-    print(f"✅ Project retrieved: {retrieved['project_name']}")
-    
-    print("\n🎉 Database is ready to use!")
+    try:
+        # Test project creation
+        test_project = db_manager.create_project(
+            project_name="Test Project",
+            description="Testing shared cloud database connection"
+        )
+        print(f"✅ Test project created: {test_project['project_code']}")
+        
+        # Test retrieval
+        retrieved = db_manager.get_project_by_code(test_project['project_code'])
+        print(f"✅ Project retrieved: {retrieved['project_name']}")
+        
+        # Test list all projects
+        all_projects = db_manager.get_all_projects()
+        print(f"✅ Total projects in shared database: {len(all_projects)}")
+        
+        print("\n🎉 Shared cloud database is ready to use!")
+        print("🌐 All users will connect to the same database and share project codes")
+        
+    except Exception as e:
+        print(f"❌ Database test failed: {str(e)}")
+        print("🔍 Please check your MongoDB connection string in .env file")

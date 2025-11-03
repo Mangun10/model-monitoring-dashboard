@@ -1091,6 +1091,10 @@ def show_view_project_page():
         st.error(f"❌ Database module not available: {str(e)}")
         st.info("Please make sure MongoDB is configured properly.")
         return
+    except Exception as e:
+        st.error(f"❌ Database connection failed: {str(e)}")
+        st.info("Please check your MongoDB connection string in .env file.")
+        return
     
     # Check for URL parameter
     query_params = st.query_params

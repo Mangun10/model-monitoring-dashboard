@@ -309,56 +309,6 @@ def show_home_page():
             """)
     
     with col2:
-        st.markdown("### 📊 Dashboard Status")
-        
-        # Model status
-        if st.session_state.model is not None:
-            st.success("✅ Model Loaded")
-            
-            **2. Create a Project:**
-            ```bash
-            curl -X POST "http://localhost:8000/api/v1/projects" \\
-              -F "project_name=My ML Project" \\
-              -F "description=My awesome ML project"
-            ```
-            
-            **3. You'll get a response like:**
-            ```json
-            {
-              "project_code": "M74V8Y09",
-              "project_name": "My ML Project",
-              "message": "Project created successfully"
-            }
-            ```
-            
-            **4. Upload a Model:**
-            ```bash
-            curl -X POST "http://localhost:8000/api/v1/models/upload" \\
-              -F "model_file=@my_model.pkl" \\
-              -F "project_code=M74V8Y09" \\
-              -F "model_name=My Model" \\
-              -F "model_version=1.0" \\
-              -F "model_type=classification"
-            ```
-            
-            **5. View Results:**
-            - Go to "👁️ View Project" 
-            - Enter your project code: `M74V8Y09`
-            - See all models, evaluations, and metrics!
-            
-            ### 🔧 API Endpoints
-            - **API Docs**: http://localhost:8000/docs
-            - **Health Check**: http://localhost:8000/api/v1/health
-            - **List Projects**: GET /api/v1/projects
-            - **Create Project**: POST /api/v1/projects
-            - **Upload Model**: POST /api/v1/models/upload
-            - **Evaluate Model**: POST /api/v1/models/{model_id}/evaluate
-            
-            ### 📁 Sample Code
-            Check the `sample_external_project/` folder for a complete Python example!
-            """)
-    
-    with col2:
         st.markdown("### 📊 Current Status")
         
         # Model status
@@ -1203,14 +1153,22 @@ def show_view_project_page():
             
             #### Custom Integration  
             ```python
-            from api_client import DashboardAPIClient
+            # Example: Create your own API client
+            import requests
             
-            client = DashboardAPIClient()
-            project = client.create_project(
-                project_name="My Project",
-                description="Production monitoring"
-            )
-            print(f"Code: {project['project_code']}")
+            def create_project(name, description):
+                response = requests.post(
+                    "http://localhost:8000/api/v1/projects",
+                    data={
+                        "project_name": name,
+                        "description": description
+                    }
+                )
+                return response.json()["project_code"]
+            
+            # Usage
+            code = create_project("My Project", "Production monitoring")
+            print(f"Code: {code}")
             ```
             """)
         

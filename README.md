@@ -10,7 +10,7 @@ This is a **cloud-based ML monitoring platform** that automatically tracks your 
 
 - **🎯 Automatic Model Tracking**: Upload models and get instant performance metrics
 - **📊 Interactive Dashboard**: Real-time charts, metrics, and model comparisons
-- **🔍 Model Explainability**: SHAP analysis to understand how your models make decisions  
+- **🔍 Model Explainability**: SHAP analysis to understand how your models make decisions
 - **🌐 Cloud Database**: MongoDB Atlas for persistent, team-accessible storage
 - **🔗 REST API**: Complete API for programmatic integration with your ML pipelines
 - **👥 Multi-Project Organization**: Organize models by projects with shareable project codes
@@ -20,24 +20,27 @@ This is a **cloud-based ML monitoring platform** that automatically tracks your 
 ## 🎯 Who This Is For
 
 - **Data Scientists** who want to monitor model performance over time
-- **ML Engineers** implementing model monitoring in production pipelines  
+- **ML Engineers** implementing model monitoring in production pipelines
 - **Research Teams** comparing different model approaches and experiments
 - **Organizations** needing centralized model tracking across multiple projects
 
 ## 🚀 How It Works
 
 ### 1. **Project-Based Organization**
+
 Each project gets a unique 8-character code (e.g., `M74V8Y09`) that you can share with your team. No accounts or authentication needed - just share the code for instant access.
 
 ### 2. **Multiple Integration Options**
+
 - **Web Interface**: Upload models directly through the dashboard
 - **Python API**: Integrate with existing ML pipelines
 - **GitHub Actions**: Automatic evaluation on every commit
 - **REST API**: Use from any programming language
 
 ### 3. **Comprehensive Analytics**
+
 - Model performance metrics (accuracy, precision, recall, F1)
-- Interactive visualizations and trend analysis  
+- Interactive visualizations and trend analysis
 - Model explainability with SHAP values
 - Data drift detection and monitoring
 
@@ -50,17 +53,20 @@ Each project gets a unique 8-character code (e.g., `M74V8Y09`) that you can shar
 **Prerequisites**: Python 3.8+
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/Mangun10/model-monitoring-dashboard.git
    cd model-monitoring-dashboard
    ```
 
 2. **Install dependencies**
+
    ```bash
    pip install -r requirements.txt
    ```
 
 3. **Set up MongoDB Atlas** (free tier)
+
    - Create account at [mongodb.com](https://mongodb.com)
    - Create a cluster and get connection string
    - Create `.env` file:
@@ -69,10 +75,11 @@ Each project gets a unique 8-character code (e.g., `M74V8Y09`) that you can shar
      ```
 
 4. **Start the system**
+
    ```bash
    # Terminal 1: Start API server
    python api_server.py
-   
+
    # Terminal 2: Start dashboard
    streamlit run app.py
    ```
@@ -86,16 +93,19 @@ Each project gets a unique 8-character code (e.g., `M74V8Y09`) that you can shar
 #### **Option 1: Web Interface (Easiest)**
 
 1. **Create a Project**
+
    - Click "Create New Project" on the homepage
    - Enter project name and description
    - Get your unique project code (e.g., `M74V8Y09`)
 
 2. **Upload a Model**
+
    - Go to your project dashboard
    - Upload your `.pkl` model file
    - Add model metadata (name, type, version)
 
 3. **Run Evaluation**
+
    - Upload test dataset (CSV format)
    - Select target column
    - Get comprehensive performance metrics
@@ -122,7 +132,7 @@ project_code = project['project_code']  # e.g., "M74V8Y09"
 # Upload model
 model_result = client.upload_model(
     model_path="my_model.pkl",
-    model_type="classification", 
+    model_type="classification",
     project_code=project_code,
     model_name="Random Forest v1.0"
 )
@@ -143,12 +153,14 @@ print(f"Dashboard: http://localhost:8501/?project_code={project_code}")
 Set up automatic model training and evaluation on every commit:
 
 1. **Copy the template workflow**
+
    ```bash
    # Copy from sample to your repository
    cp sample_external_project/.github/workflows/ci.yml .github/workflows/
    ```
 
 2. **Add repository secrets**
+
    - Go to GitHub repo → Settings → Secrets → Actions
    - Add `MONGODB_CONNECTION_STRING` with your Atlas connection string
    - Add `DASHBOARD_API_URL` (optional): your deployed dashboard URL
@@ -161,21 +173,25 @@ Set up automatic model training and evaluation on every commit:
 ### 📊 Dashboard Features
 
 #### **Home Page**
+
 - Overview of all projects
 - Recent model uploads and evaluations
 - Quick access to create new projects
 
 #### **Project Dashboard**
+
 - Model performance over time
 - Comparison between different models
 - Detailed metrics and visualizations
 
 #### **Model Details**
+
 - Comprehensive evaluation metrics
 - SHAP explainability plots
 - Model metadata and version history
 
 #### **API Documentation**
+
 - Interactive API docs at `http://localhost:8000/docs`
 - Complete endpoint reference
 - Code examples in multiple languages
@@ -183,6 +199,7 @@ Set up automatic model training and evaluation on every commit:
 ### 🔧 Configuration Options
 
 #### **Environment Variables** (`.env` file)
+
 ```bash
 # Required
 MONGODB_CONNECTION_STRING=mongodb+srv://...
@@ -195,12 +212,15 @@ DEBUG=false
 ```
 
 #### **MongoDB Collections**
+
 The system automatically creates these collections:
+
 - `projects` - Project metadata and codes
-- `models` - Stored model binaries and metadata  
+- `models` - Stored model binaries and metadata
 - `evaluations` - Test results and metrics
 
 #### **Supported Model Types**
+
 - **Classification**: Accuracy, precision, recall, F1-score, confusion matrix
 - **Regression**: R², RMSE, MAE, MAPE
 - **Custom metrics**: Add your own evaluation functions
@@ -208,6 +228,7 @@ The system automatically creates these collections:
 ### 🚀 Production Deployment
 
 #### **Docker Deployment**
+
 ```bash
 # Build and run with Docker Compose
 docker-compose up --build
@@ -216,11 +237,13 @@ docker-compose up --build
 ```
 
 #### **Cloud Deployment Options**
+
 - **Streamlit Cloud**: Deploy dashboard with one click
 - **Heroku**: Easy deployment with git integration
 - **AWS/GCP/Azure**: Full cloud infrastructure deployment
 
 #### **Security Considerations**
+
 - MongoDB Atlas provides enterprise-grade security
 - Project codes act as access tokens (share carefully)
 - Consider adding authentication for production use
@@ -231,23 +254,27 @@ docker-compose up --build
 #### **Key Endpoints**
 
 **Projects**
+
 - `POST /api/projects` - Create new project
 - `GET /api/projects/{project_code}` - Get project details
 - `GET /api/projects` - List all projects
 
-**Models**  
+**Models**
+
 - `POST /api/models/upload` - Upload model binary
 - `GET /api/models/{model_id}` - Get model details
 - `DELETE /api/models/{model_id}` - Delete model
 
 **Evaluations**
-- `POST /api/evaluations` - Run model evaluation  
+
+- `POST /api/evaluations` - Run model evaluation
 - `GET /api/evaluations/{evaluation_id}` - Get results
 - `GET /api/evaluations/model/{model_id}` - List model evaluations
 
 #### **Example Responses**
 
 **Create Project Response**
+
 ```json
 {
   "project_code": "M74V8Y09",
@@ -258,10 +285,11 @@ docker-compose up --build
 ```
 
 **Model Evaluation Response**
+
 ```json
 {
   "evaluation_id": "eval_abc123",
-  "model_id": "model_xyz789", 
+  "model_id": "model_xyz789",
   "metrics": {
     "accuracy": 0.8542,
     "precision": 0.8234,
@@ -277,21 +305,25 @@ docker-compose up --build
 #### **Common Issues**
 
 **❌ "Connection to MongoDB failed"**
+
 - Check your connection string in `.env`
 - Verify MongoDB Atlas cluster is running
 - Ensure IP address is whitelisted in Atlas
 
 **❌ "API server not responding"**
+
 - Confirm `python api_server.py` is running
 - Check if port 8000 is available
 - Try accessing `http://localhost:8000/docs`
 
 **❌ "Dashboard shows no data"**
+
 - Verify project code is correct
 - Check if models were uploaded successfully
 - Ensure API server and dashboard are connected
 
 **❌ "Model upload fails"**
+
 - Verify file is a valid pickle (.pkl) format
 - Check file size (large models may timeout)
 - Ensure scikit-learn version compatibility
@@ -329,7 +361,7 @@ model.fit(X_train, y_train)
 with open('example_model.pkl', 'wb') as f:
     pickle.dump(model, f)
 
-# Save test data  
+# Save test data
 test_df = pd.DataFrame(X_test)
 test_df['target'] = y_test
 test_df.to_csv('test_data.csv', index=False)
@@ -357,7 +389,7 @@ model_result = client.upload_model(
 # 5. Evaluate model
 evaluation = client.evaluate_model(
     model_id=model_result['model_id'],
-    dataset_path="test_data.csv", 
+    dataset_path="test_data.csv",
     target_column="target",
     test_name="Initial Evaluation"
 )
@@ -369,6 +401,7 @@ print(f"🔗 Dashboard: http://localhost:8501/?project_code={project_code}")
 ```
 
 Run this example:
+
 ```bash
 python example_workflow.py
 ```
@@ -381,7 +414,7 @@ python example_workflow.py
 model-monitoring-dashboard/
 ├── 🔧 Core Components
 │   ├── app.py                    # Streamlit dashboard
-│   ├── api_server.py             # FastAPI REST server  
+│   ├── api_server.py             # FastAPI REST server
 │   ├── cloud_database.py         # MongoDB integration
 │   └── requirements.txt          # Python dependencies
 │
@@ -395,7 +428,7 @@ model-monitoring-dashboard/
 │   └── sample_external_project/  # Copy this to your repo
 │       ├── .github/workflows/ci.yml    # GitHub Actions template
 │       ├── api_client.py               # Python API client
-│       ├── train_and_evaluate.py       # Sample training script  
+│       ├── train_and_evaluate.py       # Sample training script
 │       └── requirements.txt            # Dependencies
 │
 └── 🧪 Testing

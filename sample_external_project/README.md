@@ -34,12 +34,9 @@ cp sample_external_project/api_client.py YOUR_REPO/
 
 In your repository, go to **Settings → Secrets → Actions** and add:
 
-| Secret Name                 | Value                                                   | Required    |
-| --------------------------- | ------------------------------------------------------- | ----------- |
-| `MONGODB_CONNECTION_STRING` | Your MongoDB Atlas connection string                    | ✅ Yes      |
-| `DASHBOARD_API_URL`         | Your dashboard URL (e.g., `https://your-dashboard.com`) | ⚪ Optional |
-
-### Step 3: Adapt the Training Script
+| Secret Name         | Value                                                   | Required    |
+| ------------------- | ------------------------------------------------------- | ----------- |
+| `DASHBOARD_API_URL` | Your dashboard URL (e.g., `https://your-dashboard.com`) | ⚪ Optional |
 
 Edit `train_and_evaluate.py` to use your actual model training code. The script should:
 
@@ -74,9 +71,10 @@ git push
 
 **Key environment variables it uses:**
 
-- `MONGODB_CONNECTION_STRING` - To store results directly in database
-- `DASHBOARD_API_URL` - Alternative: POST to dashboard API
-- `GITHUB_*` variables - Automatically provided by GitHub
+- `DASHBOARD_API_URL` - Dashboard API endpoint for storing results
+- `GITHUB_*` variables - Automatically provided by GitHub Actions
+
+**Note**: MongoDB connection is handled automatically by the dashboard - no database setup required!
 
 ### `train_and_evaluate.py`
 
@@ -84,7 +82,7 @@ git push
 
 - Creating synthetic data for testing
 - Training a RandomForest model
-- Integration with dashboard API or MongoDB
+- Integration with dashboard API (uses shared cloud database)
 - Structured output for CI parsing
 
 **Output format expected by CI:**
@@ -166,13 +164,12 @@ python api_server.py
 python test_integration.py
 ```
 
-### Test 2: Direct MongoDB Integration
+**Note**: No database setup needed - the dashboard handles all data storage automatically!
+
+### Test 2: Local Training Script
 
 ```bash
-# Set environment variable
-export MONGODB_CONNECTION_STRING="mongodb+srv://..."
-
-# Run training script
+# Run training script locally (connects to shared dashboard database)
 python train_and_evaluate.py
 ```
 
@@ -219,25 +216,17 @@ Check GitHub Actions tab for workflow execution.
 
 - Dashboard API server must be running
 - POST data to `/api/projects/` endpoints
+- Uses shared cloud database automatically
 - Good for development and testing
 
-### Option 2: Direct MongoDB (Production)
+### Option 2: GitHub Actions CI/CD
 
-- Write directly to MongoDB Atlas
-- No API server dependency
-- Better for CI/CD environments
+- Automated training on commits
+- Results posted as PR comments
+- No manual setup required
+- Perfect for production workflows
 
-### Option 3: Hybrid Approach
-
-```python
-# Try API first, fallback to MongoDB
-try:
-    # Use API if available
-    result = api_client.create_project(...)
-except:
-    # Fallback to direct MongoDB
-    result = db_manager.create_project(...)
-```
+**Note**: All options use the same shared cloud database - no individual database setup needed!
 
 ## 🛠 Troubleshooting
 
@@ -246,7 +235,7 @@ except:
 **❌ "No project code found in CI output"**
 
 - Check if training script prints the expected format
-- Verify MongoDB connection string is set
+- Verify dashboard API is accessible
 - Look for errors in GitHub Actions logs
 
 **❌ "Workflow fails on dependencies"**
@@ -262,11 +251,8 @@ except:
 ### Debug Commands:
 
 ```bash
-# Test MongoDB connection
-python -c "from api_client import *; print('Connection OK')"
-
-# Check environment variables (in CI)
-echo "MongoDB string length: ${#MONGODB_CONNECTION_STRING}"
+# Test API connection
+python -c "import requests; print('API OK' if requests.get('http://localhost:8000/api/v1/health').status_code == 200 else 'API Error')"
 
 # Test project code extraction
 grep "Your project code is:" ci_output.log
@@ -277,12 +263,14 @@ grep "Your project code is:" ci_output.log
 ## 📋 Checklist for Your Repository
 
 - [ ] Copied workflow file to `.github/workflows/ci.yml`
-- [ ] Added `MONGODB_CONNECTION_STRING` secret
+- [ ] Added `DASHBOARD_API_URL` secret (optional)
 - [ ] Adapted `train_and_evaluate.py` for your model
 - [ ] Updated `requirements.txt` with dependencies
 - [ ] Tested integration locally
 - [ ] Triggered CI with a test commit
 - [ ] Verified project code appears in dashboard
+
+**Note**: No database setup required - uses shared cloud database!
 
 ## 🎯 Next Steps
 
